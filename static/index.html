@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Therapy Goal Companion</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">TG</div>
+          <div>
+            <h1>Therapy Goal Companion</h1>
+            <p>Private local memory, session summaries, and commitment support.</p>
+          </div>
+        </div>
+
+        <button id="newSession" class="primary">New session</button>
+
+        <section>
+          <h2>Sessions</h2>
+          <div id="sessions" class="list"></div>
+        </section>
+
+        <section>
+          <h2>Memory Palace</h2>
+          <div id="memories" class="memory-list"></div>
+        </section>
+      </aside>
+
+      <section class="chat-panel">
+        <header class="chat-header">
+          <div>
+            <p class="eyebrow" id="modelStatus">Checking model...</p>
+            <h2 id="sessionTitle">Current session</h2>
+          </div>
+          <div class="risk-pill" id="riskPill">Low risk</div>
+        </header>
+
+        <div class="summary-band">
+          <div>
+            <span>Session summary</span>
+            <p id="summary">Start by sharing what feels important, stuck, or worth changing.</p>
+          </div>
+          <button id="summarize" class="ghost">Refresh</button>
+        </div>
+
+        <div id="messages" class="messages"></div>
+
+        <form id="chatForm" class="composer">
+          <textarea
+            id="messageInput"
+            rows="3"
+            placeholder="Tell me what you want help understanding or committing to..."
+          ></textarea>
+          <button type="submit" class="send">Send</button>
+        </form>
+      </section>
+
+      <aside class="right-rail">
+        <section>
+          <h2>Therapy Focus</h2>
+          <div id="interventions" class="chips">
+            <span>CBT</span><span>DBT</span><span>SFT</span><span>ACT</span>
+          </div>
+        </section>
+
+        <section>
+          <h2>Commitments</h2>
+          <div id="commitments" class="commitments"></div>
+        </section>
+
+        <section class="safety">
+          <h2>Safety Note</h2>
+          <p>
+            This app is supportive coaching, not emergency care. If you might hurt yourself or someone else,
+            contact local emergency services or a trusted person now.
+          </p>
+        </section>
+      </aside>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
