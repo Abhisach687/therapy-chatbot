@@ -9,6 +9,95 @@ const state = {
   activeQuizId: null,
 };
 
+const fallbackQuizCatalog = {
+  scales: {
+    freq_0_3: [
+      { value: 0, label: "Not at all" },
+      { value: 1, label: "Several days" },
+      { value: 2, label: "More than half the days" },
+      { value: 3, label: "Nearly every day" },
+    ],
+    agree_0_4: [
+      { value: 0, label: "Strongly disagree" },
+      { value: 1, label: "Disagree" },
+      { value: 2, label: "Neutral" },
+      { value: 3, label: "Agree" },
+      { value: 4, label: "Strongly agree" },
+    ],
+    rate_0_10: Array.from({ length: 11 }, (_, i) => ({ value: i, label: String(i) })),
+  },
+  templates: {
+    diagnosis: {
+      id: "diagnosis",
+      title: "Mental Health Screening Quiz",
+      description: "Structured screening for symptom burden and intervention planning.",
+      disclaimer: "Screening aid only, not a formal diagnosis.",
+      sections: [
+        {
+          title: "Depressive symptoms",
+          scale: "freq_0_3",
+          questions: [
+            { id: "phq_1", text: "Little interest or pleasure in doing things." },
+            { id: "phq_2", text: "Feeling down, depressed, or hopeless." },
+            { id: "phq_3", text: "Trouble sleeping or sleeping too much." },
+            { id: "phq_4", text: "Feeling tired or low energy." },
+            { id: "phq_5", text: "Poor appetite or overeating." },
+            { id: "phq_6", text: "Feeling bad about yourself or like a failure." },
+            { id: "phq_7", text: "Trouble concentrating on tasks." },
+            { id: "phq_8", text: "Moving slowly or feeling restless." },
+            { id: "phq_9", text: "Thoughts of being better off dead or self-harm." },
+          ],
+        },
+        {
+          title: "Anxiety symptoms",
+          scale: "freq_0_3",
+          questions: [
+            { id: "gad_1", text: "Feeling nervous, anxious, or on edge." },
+            { id: "gad_2", text: "Not being able to stop or control worrying." },
+            { id: "gad_3", text: "Worrying too much about different things." },
+            { id: "gad_4", text: "Trouble relaxing." },
+            { id: "gad_5", text: "Restlessness, hard to sit still." },
+            { id: "gad_6", text: "Becoming easily annoyed or irritable." },
+            { id: "gad_7", text: "Feeling afraid that something awful may happen." },
+          ],
+        },
+      ],
+    },
+    goals: {
+      id: "goals",
+      title: "Life Goals Discovery Quiz",
+      description: "Prioritizes high-impact life domains and next actions.",
+      disclaimer: "Coaching support for goals, not perfection.",
+      sections: [
+        {
+          title: "Satisfaction",
+          scale: "rate_0_10",
+          questions: [
+            { id: "sat_health", text: "Health and energy satisfaction." },
+            { id: "sat_relationships", text: "Relationships satisfaction." },
+            { id: "sat_career", text: "Career or studies satisfaction." },
+            { id: "sat_meaning", text: "Meaning and purpose satisfaction." },
+          ],
+        },
+        {
+          title: "Importance",
+          scale: "rate_0_10",
+          questions: [
+            { id: "imp_health", text: "Health and energy importance." },
+            { id: "imp_relationships", text: "Relationships importance." },
+            { id: "imp_career", text: "Career or studies importance." },
+            { id: "imp_meaning", text: "Meaning and purpose importance." },
+          ],
+        },
+      ],
+    },
+  },
+  references: [
+    { name: "PHQ-9", url: "https://www.hiv.uw.edu/page/mental-health-screening/phq-9" },
+    { name: "GAD-7", url: "https://www.hiv.uw.edu/page/mental-health-screening/gad-7" },
+  ],
+};
+
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
@@ -331,10 +420,26 @@ async function submitQuiz(event) {
 }
 
 async function loadQuizzes() {
-  const payload = await api("/api/quizzes");
-  state.quizTemplates = payload.templates || {};
-  state.quizScales = payload.scales || {};
-  state.quizReferences = payload.references || [];
+  try {
+    const payload = await api("/api/quizzes");
+    state.quizTemplates = payload.templates || {};
+    state.quizScales = payload.scales || {};
+    state.quizReferences = payload.references || [];
+    return true;
+  } catch {
+    state.quizTemplates = fallbackQuizCatalog.templates;
+    state.quizScales = fallbackQuizCatalog.scales;
+    state.quizReferences = fallbackQuizCatalog.references;
+    $("modelStatus").textContent = "Quiz API unavailable: using local fallback templates";
+    return false;
+  }
+}
+
+async function launchQuiz(quizId) {
+  if (!state.quizTemplates[quizId]) {
+    await loadQuizzes();
+  }
+  renderQuiz(quizId);
 }
 
 async function loadSessions() {
@@ -482,7 +587,7 @@ async function boot() {
 $("chatForm").addEventListener("submit", sendMessage);
 $("newSession").addEventListener("click", createSession);
 $("summarize").addEventListener("click", refreshSummary);
-$("loadDiagnosisQuiz").addEventListener("click", () => renderQuiz("diagnosis"));
-$("loadGoalsQuiz").addEventListener("click", () => renderQuiz("goals"));
+$("loadDiagnosisQuiz").addEventListener("click", () => launchQuiz("diagnosis"));
+$("loadGoalsQuiz").addEventListener("click", () => launchQuiz("goals"));
 
 boot();
