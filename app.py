@@ -93,6 +93,147 @@ CRISIS_TERMS = (
     "can't go on",
 )
 
+QUIZ_SCALE_OPTIONS = {
+    "freq_0_3": [
+        {"value": 0, "label": "Not at all"},
+        {"value": 1, "label": "Several days"},
+        {"value": 2, "label": "More than half the days"},
+        {"value": 3, "label": "Nearly every day"},
+    ],
+    "agree_0_4": [
+        {"value": 0, "label": "Strongly disagree"},
+        {"value": 1, "label": "Disagree"},
+        {"value": 2, "label": "Neutral"},
+        {"value": 3, "label": "Agree"},
+        {"value": 4, "label": "Strongly agree"},
+    ],
+    "rate_0_10": [{"value": i, "label": str(i)} for i in range(11)],
+}
+
+QUIZ_REFERENCES = [
+    {
+        "name": "PHQ-9 overview and severity cut points",
+        "url": "https://www.hiv.uw.edu/page/mental-health-screening/phq-9",
+    },
+    {
+        "name": "GAD-7 overview and severity cut points",
+        "url": "https://www.hiv.uw.edu/page/mental-health-screening/gad-7",
+    },
+    {
+        "name": "Wheel of Life coaching concept",
+        "url": "https://positivepsychology.com/wheel-of-life/",
+    },
+    {
+        "name": "SMART goals framework",
+        "url": "https://www.mindtools.com/a4wo118/smart-goals",
+    },
+]
+
+QUIZ_TEMPLATES = {
+    "diagnosis": {
+        "id": "diagnosis",
+        "title": "Mental Health Screening Quiz",
+        "description": (
+            "A structured screening quiz to estimate symptom burden and suggest interventions. "
+            "It does not provide a medical diagnosis."
+        ),
+        "disclaimer": (
+            "This is a coaching and screening aid, not a clinical diagnosis. "
+            "For emergencies or self-harm risk, contact local emergency support now."
+        ),
+        "sections": [
+            {
+                "title": "Depressive symptoms (PHQ-9 style)",
+                "scale": "freq_0_3",
+                "questions": [
+                    {"id": "phq_1", "text": "Little interest or pleasure in doing things."},
+                    {"id": "phq_2", "text": "Feeling down, depressed, or hopeless."},
+                    {"id": "phq_3", "text": "Trouble sleeping or sleeping too much."},
+                    {"id": "phq_4", "text": "Feeling tired or low energy."},
+                    {"id": "phq_5", "text": "Poor appetite or overeating."},
+                    {"id": "phq_6", "text": "Feeling bad about yourself or like a failure."},
+                    {"id": "phq_7", "text": "Trouble concentrating on tasks."},
+                    {"id": "phq_8", "text": "Moving/speaking slowly or feeling very restless."},
+                    {"id": "phq_9", "text": "Thoughts of being better off dead or self-harm."},
+                ],
+            },
+            {
+                "title": "Anxiety symptoms (GAD-7 style)",
+                "scale": "freq_0_3",
+                "questions": [
+                    {"id": "gad_1", "text": "Feeling nervous, anxious, or on edge."},
+                    {"id": "gad_2", "text": "Not being able to stop or control worrying."},
+                    {"id": "gad_3", "text": "Worrying too much about different things."},
+                    {"id": "gad_4", "text": "Trouble relaxing."},
+                    {"id": "gad_5", "text": "Restlessness, hard to sit still."},
+                    {"id": "gad_6", "text": "Becoming easily annoyed or irritable."},
+                    {"id": "gad_7", "text": "Feeling afraid that something awful may happen."},
+                ],
+            },
+            {
+                "title": "Stress and function",
+                "scale": "agree_0_4",
+                "questions": [
+                    {"id": "stress_1", "text": "I feel emotionally exhausted most days."},
+                    {"id": "stress_2", "text": "Stress makes it hard to stay focused."},
+                    {"id": "function_1", "text": "My daily functioning is reduced by these symptoms."},
+                    {"id": "function_2", "text": "My relationships are affected by these symptoms."},
+                    {"id": "function_3", "text": "My work/study performance is affected."},
+                    {"id": "function_4", "text": "I feel optimistic about recovery."},
+                ],
+            },
+        ],
+    },
+    "goals": {
+        "id": "goals",
+        "title": "Life Goals Discovery Quiz",
+        "description": "A comprehensive goal-finding quiz using life domains, values, and readiness signals.",
+        "disclaimer": "This quiz helps prioritize life goals and next actions, not perfection.",
+        "sections": [
+            {
+                "title": "Life satisfaction ratings",
+                "scale": "rate_0_10",
+                "questions": [
+                    {"id": "sat_health", "text": "Health and energy: current satisfaction."},
+                    {"id": "sat_emotions", "text": "Emotional wellbeing: current satisfaction."},
+                    {"id": "sat_relationships", "text": "Relationships: current satisfaction."},
+                    {"id": "sat_career", "text": "Career or studies: current satisfaction."},
+                    {"id": "sat_finances", "text": "Finances: current satisfaction."},
+                    {"id": "sat_growth", "text": "Personal growth/learning: current satisfaction."},
+                    {"id": "sat_environment", "text": "Home/environment quality: current satisfaction."},
+                    {"id": "sat_meaning", "text": "Meaning/spirituality: current satisfaction."},
+                ],
+            },
+            {
+                "title": "Life importance ratings",
+                "scale": "rate_0_10",
+                "questions": [
+                    {"id": "imp_health", "text": "Health and energy: importance right now."},
+                    {"id": "imp_emotions", "text": "Emotional wellbeing: importance right now."},
+                    {"id": "imp_relationships", "text": "Relationships: importance right now."},
+                    {"id": "imp_career", "text": "Career or studies: importance right now."},
+                    {"id": "imp_finances", "text": "Finances: importance right now."},
+                    {"id": "imp_growth", "text": "Personal growth/learning: importance right now."},
+                    {"id": "imp_environment", "text": "Home/environment quality: importance right now."},
+                    {"id": "imp_meaning", "text": "Meaning/spirituality: importance right now."},
+                ],
+            },
+            {
+                "title": "Readiness and barriers",
+                "scale": "agree_0_4",
+                "questions": [
+                    {"id": "ready_1", "text": "I am ready to commit to a weekly action plan."},
+                    {"id": "ready_2", "text": "I have at least one supportive person/resource."},
+                    {"id": "ready_3", "text": "I can protect time for goal progress."},
+                    {"id": "ready_4", "text": "Fear of failure blocks me from starting."},
+                    {"id": "ready_5", "text": "I know why these goals matter to me."},
+                    {"id": "ready_6", "text": "When stressed, I usually avoid difficult tasks."},
+                ],
+            },
+        ],
+    },
+}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -164,6 +305,16 @@ def init_db() -> None:
                 foreign key(room_id) references palace_rooms(id),
                 foreign key(session_id) references sessions(id),
                 foreign key(message_id) references messages(id)
+            );
+
+            create table if not exists quiz_results (
+                id integer primary key autoincrement,
+                session_id text not null,
+                quiz_type text not null,
+                answers_json text not null,
+                scoring_json text not null,
+                ai_analysis text not null default '',
+                created_at text not null
             );
             """
         )
@@ -578,6 +729,302 @@ def maybe_create_commitment(session_id: str, user_text: str) -> dict[str, Any] |
     return db_one("select * from commitments where session_id = ? order by id desc limit 1", (session_id,))
 
 
+def label_from_cutoffs(score: int, cutoffs: list[tuple[int, str]]) -> str:
+    for minimum, label in cutoffs:
+        if score >= minimum:
+            return label
+    return cutoffs[-1][1]
+
+
+def get_quiz_templates() -> dict[str, Any]:
+    return {
+        "templates": QUIZ_TEMPLATES,
+        "scales": QUIZ_SCALE_OPTIONS,
+        "references": QUIZ_REFERENCES,
+    }
+
+
+def score_diagnosis_quiz(answers: dict[str, Any]) -> dict[str, Any]:
+    phq_total = sum(int(answers.get(f"phq_{i}", 0)) for i in range(1, 10))
+    gad_total = sum(int(answers.get(f"gad_{i}", 0)) for i in range(1, 8))
+    stress_total = int(answers.get("stress_1", 0)) + int(answers.get("stress_2", 0))
+    function_total = sum(int(answers.get(f"function_{i}", 0)) for i in range(1, 5))
+    suicidality_item = int(answers.get("phq_9", 0))
+
+    phq_level = label_from_cutoffs(
+        phq_total,
+        [(20, "severe"), (15, "moderately severe"), (10, "moderate"), (5, "mild"), (0, "minimal")],
+    )
+    gad_level = label_from_cutoffs(
+        gad_total,
+        [(15, "severe"), (10, "moderate"), (5, "mild"), (0, "minimal")],
+    )
+    burnout_level = label_from_cutoffs(
+        stress_total,
+        [(7, "high"), (4, "moderate"), (0, "low")],
+    )
+
+    risk = "low"
+    safety_note = "No immediate high-risk signal detected in screening items."
+    if suicidality_item >= 1:
+        risk = "high"
+        safety_note = (
+            "Item 9 was above zero. Treat this as a safety flag and seek immediate support from "
+            "local emergency services or a trusted person if safety is uncertain."
+        )
+    elif max(phq_total, gad_total) >= 15:
+        risk = "elevated"
+        safety_note = "Symptoms are elevated. Consider timely clinical assessment and additional support."
+
+    hypotheses: list[str] = []
+    if phq_total >= 10:
+        hypotheses.append("Depressive symptom burden is likely clinically significant.")
+    if gad_total >= 10:
+        hypotheses.append("Anxiety symptom burden is likely clinically significant.")
+    if stress_total >= 4:
+        hypotheses.append("Stress/burnout load appears meaningful and may reduce resilience.")
+    if not hypotheses:
+        hypotheses.append("Current symptom burden appears low to mild from this screen.")
+
+    intervention_names: list[str] = []
+    if suicidality_item >= 1:
+        intervention_names.extend(["DBT", "ACT"])
+    if gad_total >= 10 or phq_total >= 10:
+        intervention_names.extend(["CBT", "MBCT"])
+    if stress_total >= 4:
+        intervention_names.extend(["ACT", "SFT"])
+    if not intervention_names:
+        intervention_names.extend(["SFT", "ACT"])
+
+    ordered_names = list(dict.fromkeys(intervention_names))[:3]
+    interventions = [{"name": name, "rationale": THERAPY_APPROACHES[name]["use"]} for name in ordered_names]
+
+    return {
+        "quiz_type": "diagnosis",
+        "scores": {
+            "phq9": phq_total,
+            "phq9_level": phq_level,
+            "gad7": gad_total,
+            "gad7_level": gad_level,
+            "stress": stress_total,
+            "stress_level": burnout_level,
+            "function_impact": function_total,
+            "self_harm_item": suicidality_item,
+        },
+        "risk_level": risk,
+        "safety_note": safety_note,
+        "hypotheses": hypotheses,
+        "interventions": interventions,
+        "diagnostic_note": (
+            "This is a screening impression and coaching aid. It is not a formal diagnosis. "
+            "Clinical diagnosis requires an in-person licensed professional assessment."
+        ),
+    }
+
+
+def score_goals_quiz(answers: dict[str, Any]) -> dict[str, Any]:
+    domains = [
+        ("health", "Health and energy"),
+        ("emotions", "Emotional wellbeing"),
+        ("relationships", "Relationships"),
+        ("career", "Career or studies"),
+        ("finances", "Finances"),
+        ("growth", "Personal growth"),
+        ("environment", "Home/environment"),
+        ("meaning", "Meaning/spirituality"),
+    ]
+
+    readiness = {
+        "commitment": int(answers.get("ready_1", 0)),
+        "support": int(answers.get("ready_2", 0)),
+        "time": int(answers.get("ready_3", 0)),
+        "fear_barrier": int(answers.get("ready_4", 0)),
+        "purpose_clarity": int(answers.get("ready_5", 0)),
+        "avoidance_barrier": int(answers.get("ready_6", 0)),
+    }
+
+    readiness_strength = readiness["commitment"] + readiness["support"] + readiness["time"] + readiness["purpose_clarity"]
+    barrier_load = readiness["fear_barrier"] + readiness["avoidance_barrier"]
+
+    scored_domains: list[dict[str, Any]] = []
+    for key, label in domains:
+        sat = int(answers.get(f"sat_{key}", 0))
+        imp = int(answers.get(f"imp_{key}", 0))
+        gap = max(imp - sat, 0)
+        priority_score = gap * 1.8 + imp * 0.4 + max(0, barrier_load - 2) * 0.2
+        scored_domains.append(
+            {
+                "domain": key,
+                "label": label,
+                "satisfaction": sat,
+                "importance": imp,
+                "gap": gap,
+                "priority_score": round(priority_score, 2),
+            }
+        )
+
+    scored_domains.sort(key=lambda item: item["priority_score"], reverse=True)
+    top_domains = scored_domains[:3]
+
+    action_map = {
+        "health": "Schedule 3 short movement blocks this week and lock them in your calendar.",
+        "emotions": "Run a daily 10-minute mood reset (breathing, grounding, or journaling).",
+        "relationships": "Initiate one meaningful check-in with a key person this week.",
+        "career": "Define one measurable work/study milestone to complete in 7 days.",
+        "finances": "Track spending for 7 days and set one non-negotiable budget limit.",
+        "growth": "Choose one skill and complete two 25-minute learning sessions this week.",
+        "environment": "Declutter one high-impact area and set a 15-minute daily reset routine.",
+        "meaning": "Create a weekly ritual that connects you to purpose or values.",
+    }
+
+    goal_candidates = []
+    for domain in top_domains:
+        current = domain["satisfaction"]
+        target = min(10, current + 2)
+        goal_candidates.append(
+            {
+                "domain": domain["domain"],
+                "goal": f"Raise {domain['label']} from {current}/10 to {target}/10 within 8 weeks.",
+                "first_action": action_map.get(domain["domain"], "Take one visible step this week."),
+            }
+        )
+
+    intervention_names: list[str] = []
+    if barrier_load >= 5:
+        intervention_names.extend(["ACT", "CBT", "DBT"])
+    if readiness_strength <= 6:
+        intervention_names.extend(["SFT", "ACT"])
+    if any(domain["domain"] in ("emotions", "meaning") for domain in top_domains):
+        intervention_names.extend(["MBCT", "ACT"])
+    if any(domain["domain"] in ("relationships",) for domain in top_domains):
+        intervention_names.extend(["Narrative", "DBT"])
+    if not intervention_names:
+        intervention_names.extend(["SFT", "ACT", "CBT"])
+
+    ordered_names = list(dict.fromkeys(intervention_names))[:3]
+    interventions = [{"name": name, "rationale": THERAPY_APPROACHES[name]["use"]} for name in ordered_names]
+
+    focus_statement = (
+        "High-value domains with low satisfaction should be prioritized first. "
+        "Use one 8-week goal and one 7-day action per domain to build momentum."
+    )
+
+    return {
+        "quiz_type": "goals",
+        "readiness": {
+            "strength": readiness_strength,
+            "barrier_load": barrier_load,
+            "detail": readiness,
+        },
+        "domains": scored_domains,
+        "top_domains": top_domains,
+        "goal_candidates": goal_candidates,
+        "interventions": interventions,
+        "focus_statement": focus_statement,
+    }
+
+
+def build_quiz_ai_prompt(quiz_type: str, scoring: dict[str, Any]) -> str:
+    return textwrap.dedent(
+        f"""
+        You are an evidence-aware therapy support assistant using quiz results.
+        Quiz type: {quiz_type}
+
+        Rules:
+        - Do not provide a formal diagnosis.
+        - Use language like screening impression, probable pattern, and next-step recommendations.
+        - If there is self-harm risk, place safety guidance first.
+        - Keep tone collaborative, practical, and concise.
+
+        Write a response with these headings:
+        1) Screening Impression
+        2) Why This Pattern Might Be Happening
+        3) Recommended Interventions (top 3)
+        4) Life Goal Direction and 7-Day Plan
+        5) Safety and When to Seek Clinical Support
+
+        Use this scored JSON as the source of truth:
+        {json.dumps(scoring, ensure_ascii=True)}
+        """
+    ).strip()
+
+
+def lmstudio_quiz_analysis(quiz_type: str, scoring: dict[str, Any]) -> str:
+    prompt = build_quiz_ai_prompt(quiz_type, scoring)
+    try:
+        return call_local_llm(prompt, "Generate guidance from these quiz results.")
+    except Exception:
+        if quiz_type == "diagnosis":
+            scores = scoring.get("scores", {})
+            return (
+                "Screening Impression: Symptoms suggest a non-trivial burden and deserve structured support.\n"
+                f"PHQ-9: {scores.get('phq9', 0)} ({scores.get('phq9_level', 'unknown')}), "
+                f"GAD-7: {scores.get('gad7', 0)} ({scores.get('gad7_level', 'unknown')}).\n"
+                "Recommended Interventions: Use CBT for thought patterns, ACT for values-aligned action, "
+                "and MBCT for rumination reduction.\n"
+                "Life Goal Direction: Start with one daily routine that protects sleep, movement, and social contact.\n"
+                "Safety: If self-harm thoughts are present or safety is uncertain, contact emergency/local crisis support now."
+            )
+        top_domains = scoring.get("top_domains", [])
+        top_labels = ", ".join(domain.get("label", "domain") for domain in top_domains[:3])
+        return (
+            f"Screening Impression: Your highest-priority life domains are {top_labels or 'not yet clear'}.\n"
+            "Why This Pattern Might Be Happening: Importance-satisfaction gaps suggest misaligned time and energy allocation.\n"
+            "Recommended Interventions: Use SFT to define tiny wins, ACT to connect actions to values, and CBT to reduce avoidance loops.\n"
+            "Life Goal Direction and 7-Day Plan: Choose one domain and execute one visible action this week.\n"
+            "Safety and Support: Seek clinical support if mood or anxiety symptoms significantly worsen."
+        )
+
+
+def store_quiz_result(
+    session_id: str,
+    quiz_type: str,
+    answers: dict[str, Any],
+    scoring: dict[str, Any],
+    ai_analysis: str,
+) -> dict[str, Any]:
+    stamp = now_iso()
+    db_exec(
+        """
+        insert into quiz_results (session_id, quiz_type, answers_json, scoring_json, ai_analysis, created_at)
+        values (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            session_id,
+            quiz_type,
+            json.dumps(answers, ensure_ascii=True),
+            json.dumps(scoring, ensure_ascii=True),
+            ai_analysis,
+            stamp,
+        ),
+    )
+    return db_one("select * from quiz_results where session_id = ? order by id desc limit 1", (session_id,)) or {}
+
+
+def persist_goal_quiz_memories(session_id: str, scoring: dict[str, Any]) -> None:
+    for item in scoring.get("goal_candidates", [])[:3]:
+        goal_text = clean_sentence(item.get("goal", ""))
+        action_text = clean_sentence(item.get("first_action", ""))
+        if not goal_text:
+            continue
+        stamp = now_iso()
+        db_exec(
+            """
+            insert into memories (kind, label, content, source_session_id, confidence, created_at, updated_at)
+            values (?, ?, ?, ?, ?, ?, ?)
+            """,
+            ("goal", goal_text[:64], goal_text, session_id, 0.8, stamp, stamp),
+        )
+        if action_text:
+            db_exec(
+                """
+                insert into commitments (session_id, goal, action, schedule, confidence, status, created_at, updated_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (session_id, goal_text, action_text, "Next 7 days", 7, "active", stamp, stamp),
+            )
+
+
 class TherapyHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
@@ -595,6 +1042,9 @@ class TherapyHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/api/health":
             self.json_response({"ok": True, "model_url": LOCAL_LLM_URL, "model": LOCAL_LLM_MODEL})
+            return
+        if self.path == "/api/quizzes":
+            self.json_response(get_quiz_templates())
             return
         if self.path == "/api/sessions":
             sessions = db_rows("select * from sessions order by updated_at desc")
@@ -702,6 +1152,53 @@ class TherapyHandler(SimpleHTTPRequestHandler):
                     "commitment": commitment,
                     "risk_level": risk,
                     "model_status": model_status,
+                }
+            )
+            return
+
+        if self.path == "/api/quiz/submit":
+            body = self.read_json()
+            quiz_type = clean_sentence(str(body.get("quiz_type", ""))).lower()
+            answers = body.get("answers", {})
+            if quiz_type not in QUIZ_TEMPLATES:
+                self.json_response({"error": "Unsupported quiz type."}, HTTPStatus.BAD_REQUEST)
+                return
+            if not isinstance(answers, dict) or not answers:
+                self.json_response({"error": "Answers are required."}, HTTPStatus.BAD_REQUEST)
+                return
+
+            session_id = ensure_session(body.get("session_id"))
+            if quiz_type == "diagnosis":
+                scoring = score_diagnosis_quiz(answers)
+                db_exec("update sessions set risk_level = ?, updated_at = ? where id = ?", (scoring["risk_level"], now_iso(), session_id))
+            else:
+                scoring = score_goals_quiz(answers)
+                persist_goal_quiz_memories(session_id, scoring)
+
+            ai_analysis = lmstudio_quiz_analysis(quiz_type, scoring)
+            result_row = store_quiz_result(session_id, quiz_type, answers, scoring, ai_analysis)
+
+            add_message(
+                session_id,
+                "assistant",
+                (
+                    f"Quiz completed: {QUIZ_TEMPLATES[quiz_type]['title']}.\n"
+                    "This is a screening and coaching interpretation, not a formal diagnosis.\n\n"
+                    f"{ai_analysis}"
+                ),
+            )
+            summary = summarize_session(session_id)
+            session = db_one("select * from sessions where id = ?", (session_id,))
+            self.json_response(
+                {
+                    "session": session,
+                    "summary": summary,
+                    "quiz_result": result_row,
+                    "scoring": scoring,
+                    "ai_analysis": ai_analysis,
+                    "interventions": scoring.get("interventions", []),
+                    "risk_level": scoring.get("risk_level", session.get("risk_level", "low") if session else "low"),
+                    "model_status": "local-model" if ai_analysis else "fallback",
                 }
             )
             return

@@ -15,6 +15,11 @@ It is designed for goal identification, commitment building, and therapy-style r
 - Per-session summaries.
 - Commitment tracking from phrases like `I will...`, `I commit to...`, or `my next step is...`.
 - Intervention selection across CBT, DBT, Solution-Focused Therapy, MBCT, ACT, and Narrative Therapy.
+- Comprehensive quizzes:
+	- Mental health screening quiz (PHQ-9 style + GAD-7 style + stress/function items).
+	- Life-goals discovery quiz (Wheel-of-Life style domains + readiness/barrier profiling).
+- Quiz scoring with intervention selection and life-goal recommendations.
+- LM Studio interpretation of quiz results for a practical 7-day plan.
 - Crisis-aware responses that encourage emergency or trusted-person support when needed.
 - Fallback mode if the local model server is offline.
 
@@ -49,7 +54,24 @@ $env:PORT = "8080"
 - `POST /api/summarize`
 - `GET /api/memory`
 - `GET /api/palace`
+- `GET /api/quizzes`
+- `POST /api/quiz/submit`
 - `PATCH /api/commitment/:id`
+
+## Quiz Behavior
+
+- The screening quiz returns a **screening impression**, not a formal diagnosis.
+- The life-goals quiz prioritizes domains with high importance and low satisfaction.
+- Based on quiz scores, the app selects top interventions (CBT/DBT/SFT/MBCT/ACT/Narrative),
+  then asks LM Studio to generate practical guidance and a 7-day plan.
+- Goal quiz results are stored into local memory and can auto-create commitments.
+
+## Evidence References
+
+- PHQ-9 overview and cut points: https://www.hiv.uw.edu/page/mental-health-screening/phq-9
+- GAD-7 overview and cut points: https://www.hiv.uw.edu/page/mental-health-screening/gad-7
+- Wheel of Life coaching concept: https://positivepsychology.com/wheel-of-life/
+- SMART goals framework: https://www.mindtools.com/a4wo118/smart-goals
 
 ## Memory Design
 

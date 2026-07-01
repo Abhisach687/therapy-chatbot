@@ -3,6 +3,10 @@ const state = {
   sessions: [],
   messages: [],
   commitments: [],
+  quizTemplates: {},
+  quizScales: {},
+  quizReferences: [],
+  activeQuizId: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -173,6 +177,166 @@ function renderInterventions(items) {
   `).join("");
 }
 
+function renderQuizReferences() {
+  if (!state.quizReferences.length) return "";
+  return `
+    <details class="quiz-references">
+      <summary>References</summary>
+      <ul>
+        ${state.quizReferences.map((item) => `
+          <li><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.name)}</a></li>
+        `).join("")}
+      </ul>
+    </details>
+  `;
+}
+
+function renderScale(questionId, scaleId) {
+  const options = state.quizScales[scaleId] || [];
+  return `<div class="quiz-scale">${options.map((option) => `
+    <label>
+      <input type="radio" name="${escapeHtml(questionId)}" value="${escapeHtml(String(option.value))}" required />
+      <span>${escapeHtml(option.label)}</span>
+    </label>
+  `).join("")}</div>`;
+}
+
+function renderQuiz(quizId) {
+  const quiz = state.quizTemplates[quizId];
+  if (!quiz) {
+    $("quizContainer").innerHTML = "<p class='muted'>Quiz templates unavailable.</p>";
+    return;
+  }
+  state.activeQuizId = quizId;
+  $("quizResult").innerHTML = "";
+  $("quizContainer").innerHTML = `
+    <form id="quizForm" class="quiz-form">
+      <h3>${escapeHtml(quiz.title)}</h3>
+      <p class="muted">${escapeHtml(quiz.description || "")}</p>
+      <p class="quiz-disclaimer">${escapeHtml(quiz.disclaimer || "")}</p>
+      ${quiz.sections.map((section) => `
+        <section class="quiz-section">
+          <h4>${escapeHtml(section.title)}</h4>
+          ${section.questions.map((question) => `
+            <article class="quiz-question">
+              <p>${escapeHtml(question.text)}</p>
+              ${renderScale(question.id, section.scale)}
+            </article>
+          `).join("")}
+        </section>
+      `).join("")}
+      <button type="submit" class="primary">Submit Quiz</button>
+      ${renderQuizReferences()}
+    </form>
+  `;
+  $("quizForm").addEventListener("submit", submitQuiz);
+}
+
+function collectQuizAnswers(quiz) {
+  const form = $("quizForm");
+  const answers = {};
+  const missing = [];
+  quiz.sections.forEach((section) => {
+    section.questions.forEach((question) => {
+      const selected = form.querySelector(`input[name="${question.id}"]:checked`);
+      if (!selected) {
+        missing.push(question.text);
+        return;
+      }
+      answers[question.id] = Number(selected.value);
+    });
+  });
+  return { answers, missing };
+}
+
+function renderQuizResult(payload) {
+  const scoring = payload.scoring || {};
+  const interventions = (payload.interventions || []).map((item) => item.name).join(", ");
+  let scoreMarkup = "";
+
+  if (scoring.quiz_type === "diagnosis") {
+    const scores = scoring.scores || {};
+    scoreMarkup = `
+      <div class="quiz-score-grid">
+        <article><strong>PHQ-9</strong><span>${escapeHtml(String(scores.phq9 || 0))} (${escapeHtml(scores.phq9_level || "n/a")})</span></article>
+        <article><strong>GAD-7</strong><span>${escapeHtml(String(scores.gad7 || 0))} (${escapeHtml(scores.gad7_level || "n/a")})</span></article>
+        <article><strong>Stress</strong><span>${escapeHtml(String(scores.stress || 0))} (${escapeHtml(scores.stress_level || "n/a")})</span></article>
+        <article><strong>Risk</strong><span>${escapeHtml(payload.risk_level || "low")}</span></article>
+      </div>
+    `;
+  }
+
+  if (scoring.quiz_type === "goals") {
+    const top = scoring.top_domains || [];
+    scoreMarkup = `
+      <div class="quiz-score-grid">
+        ${(top.slice(0, 3).map((item) => `
+          <article>
+            <strong>${escapeHtml(item.label || "Domain")}</strong>
+            <span>Importance ${escapeHtml(String(item.importance || 0))} / Satisfaction ${escapeHtml(String(item.satisfaction || 0))}</span>
+          </article>
+        `).join(""))}
+      </div>
+    `;
+  }
+
+  $("quizResult").innerHTML = `
+    <article class="quiz-output">
+      <h3>Quiz Guidance</h3>
+      <p class="muted"><strong>Selected interventions:</strong> ${escapeHtml(interventions || "n/a")}</p>
+      ${scoreMarkup}
+      ${formattedBlock(payload.ai_analysis || "No AI guidance returned.")}
+    </article>
+  `;
+}
+
+async function submitQuiz(event) {
+  event.preventDefault();
+  const quiz = state.quizTemplates[state.activeQuizId];
+  if (!quiz) return;
+
+  const { answers, missing } = collectQuizAnswers(quiz);
+  if (missing.length) {
+    alert("Please answer all quiz questions before submitting.");
+    return;
+  }
+
+  if (!state.sessionId) {
+    await createSession();
+  }
+
+  const payload = await api("/api/quiz/submit", {
+    method: "POST",
+    body: JSON.stringify({
+      session_id: state.sessionId,
+      quiz_type: state.activeQuizId,
+      answers,
+    }),
+  });
+
+  $("modelStatus").textContent = payload.model_status || "local-model";
+  $("summary").innerHTML = formattedBlock(payload.summary || "No summary yet.");
+  $("riskPill").textContent = `${payload.risk_level || "low"} risk`;
+  $("riskPill").className = `risk-pill ${payload.risk_level || "low"}`;
+  renderInterventions(payload.interventions || []);
+  renderQuizResult(payload);
+
+  if (payload.session?.id) {
+    state.sessionId = payload.session.id;
+    localStorage.setItem("therapy-session-id", state.sessionId);
+    await loadSession(state.sessionId);
+    await loadSessions();
+    await loadMemory();
+  }
+}
+
+async function loadQuizzes() {
+  const payload = await api("/api/quizzes");
+  state.quizTemplates = payload.templates || {};
+  state.quizScales = payload.scales || {};
+  state.quizReferences = payload.references || [];
+}
+
 async function loadSessions() {
   const payload = await api("/api/sessions");
   state.sessions = payload.sessions;
@@ -305,6 +469,7 @@ async function boot() {
   } catch {
     $("modelStatus").textContent = "Backend unavailable";
   }
+  await loadQuizzes();
   await loadSessions();
   await loadMemory();
   if (state.sessionId) {
@@ -317,5 +482,7 @@ async function boot() {
 $("chatForm").addEventListener("submit", sendMessage);
 $("newSession").addEventListener("click", createSession);
 $("summarize").addEventListener("click", refreshSummary);
+$("loadDiagnosisQuiz").addEventListener("click", () => renderQuiz("diagnosis"));
+$("loadGoalsQuiz").addEventListener("click", () => renderQuiz("goals"));
 
 boot();
