@@ -611,44 +611,44 @@ class TherapyHandler(SimpleHTTPRequestHandler):
             )
             return
         if self.path == "/api/memory":
-                room_counts = db_rows(
-                    """
-                    select r.name, r.description, count(d.id) as drawer_count
-                    from palace_rooms r
-                    left join palace_drawers d on d.room_id = r.id
-                    group by r.id
-                    order by r.name asc
-                    """
-                )
+            room_counts = db_rows(
+                """
+                select r.name, r.description, count(d.id) as drawer_count
+                from palace_rooms r
+                left join palace_drawers d on d.room_id = r.id
+                group by r.id
+                order by r.name asc
+                """
+            )
             self.json_response(
                 {
                     "memories": db_rows("select * from memories order by updated_at desc"),
                     "commitments": db_rows("select * from commitments order by updated_at desc"),
-                        "rooms": room_counts,
+                    "rooms": room_counts,
                 }
             )
             return
-            if self.path == "/api/palace":
-                rooms = db_rows(
-                    """
-                    select r.id, r.name, r.description, count(d.id) as drawer_count
-                    from palace_rooms r
-                    left join palace_drawers d on d.room_id = r.id
-                    group by r.id
-                    order by drawer_count desc, r.name asc
-                    """
-                )
-                recent = db_rows(
-                    """
-                    select d.id, d.role, d.content, d.created_at, d.session_id, r.name as room_name
-                    from palace_drawers d
-                    join palace_rooms r on r.id = d.room_id
-                    order by d.id desc
-                    limit 24
-                    """
-                )
-                self.json_response({"rooms": rooms, "drawers": recent})
-                return
+        if self.path == "/api/palace":
+            rooms = db_rows(
+                """
+                select r.id, r.name, r.description, count(d.id) as drawer_count
+                from palace_rooms r
+                left join palace_drawers d on d.room_id = r.id
+                group by r.id
+                order by drawer_count desc, r.name asc
+                """
+            )
+            recent = db_rows(
+                """
+                select d.id, d.role, d.content, d.created_at, d.session_id, r.name as room_name
+                from palace_drawers d
+                join palace_rooms r on r.id = d.room_id
+                order by d.id desc
+                limit 24
+                """
+            )
+            self.json_response({"rooms": rooms, "drawers": recent})
+            return
         super().do_GET()
 
     def do_POST(self) -> None:
