@@ -147,12 +147,24 @@ function renderCommitments() {
 
 function renderMemory(payload) {
   const memories = payload.memories || [];
-  $("memories").innerHTML = memories.slice(0, 10).map((memory) => `
+  const rooms = payload.rooms || [];
+  const roomsMarkup = rooms.length
+    ? `<div class="room-grid">${rooms.map((room) => `
+      <article class="room-chip">
+        <strong>${escapeHtml(room.name)}</strong>
+        <span>${escapeHtml(String(room.drawer_count || 0))} drawers</span>
+      </article>
+    `).join("")}</div>`
+    : "";
+
+  const memoriesMarkup = memories.slice(0, 10).map((memory) => `
     <article class="memory">
       <span>${escapeHtml(memory.kind)}</span>
       <p>${escapeHtml(memory.content)}</p>
     </article>
   `).join("") || "<p class='muted'>The app stores goals, values, barriers, supports, and recurring themes locally.</p>";
+
+  $("memories").innerHTML = `${roomsMarkup}${memoriesMarkup}`;
 }
 
 function renderInterventions(items) {

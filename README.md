@@ -11,6 +11,7 @@ It is designed for goal identification, commitment building, and therapy-style r
 
 - Chat UI with session history.
 - Local SQLite memory palace for goals, values, barriers, supports, and recurring themes.
+- Method-of-Loci inspired room architecture with verbatim drawer storage for each chat turn.
 - Per-session summaries.
 - Commitment tracking from phrases like `I will...`, `I commit to...`, or `my next step is...`.
 - Intervention selection across CBT, DBT, Solution-Focused Therapy, MBCT, ACT, and Narrative Therapy.
@@ -47,6 +48,7 @@ $env:PORT = "8080"
 - `POST /api/chat`
 - `POST /api/summarize`
 - `GET /api/memory`
+- `GET /api/palace`
 - `PATCH /api/commitment/:id`
 
 ## Memory Design
@@ -56,5 +58,7 @@ The app uses a simple local "memory palace" structure:
 - Durable memories: goals, values, barriers, supports, themes.
 - Session memory: recent transcript and per-session summary.
 - Action memory: commitments with confidence and status.
+- Palace rooms: goals, values, barriers, supports, commitments, safety, reflection.
+- Palace drawers: verbatim message chunks automatically filed into rooms and recalled per query.
 
 Relevant durable memories are retrieved for every reply and injected into the system prompt sent to the local LLM.

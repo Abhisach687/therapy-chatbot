@@ -52,6 +52,37 @@ THERAPY_APPROACHES = {
     },
 }
 
+PALACE_ROOM_DEFS = {
+    "goals": {
+        "description": "Desired outcomes, intentions, and directional goals.",
+        "signals": ("goal", "want", "need", "future", "change", "improve", "aim"),
+    },
+    "values": {
+        "description": "What matters most and value statements.",
+        "signals": ("value", "important", "meaning", "purpose", "care", "matters"),
+    },
+    "barriers": {
+        "description": "Obstacles, fear loops, avoidance, and stuck patterns.",
+        "signals": ("stuck", "struggle", "avoid", "afraid", "worry", "can't", "blocked"),
+    },
+    "supports": {
+        "description": "People, practices, or contexts that help stability and progress.",
+        "signals": ("help", "support", "friend", "family", "routine", "works", "resource"),
+    },
+    "commitments": {
+        "description": "Concrete actions and commitments for next steps.",
+        "signals": ("i will", "i commit", "next step", "tomorrow", "plan", "action"),
+    },
+    "safety": {
+        "description": "Crisis, safety concerns, and de-escalation guidance.",
+        "signals": ("suicide", "self-harm", "unsafe", "kill myself", "can't go on", "panic"),
+    },
+    "reflection": {
+        "description": "General reflections, observations, and therapeutic exploration.",
+        "signals": ("feel", "think", "notice", "reflect", "story", "pattern", "emotion"),
+    },
+}
+
 CRISIS_TERMS = (
     "suicide",
     "kill myself",
@@ -112,8 +143,32 @@ def init_db() -> None:
                 created_at text not null,
                 updated_at text not null
             );
+
+            create table if not exists palace_rooms (
+                id integer primary key autoincrement,
+                name text not null unique,
+                description text not null,
+                created_at text not null,
+                updated_at text not null
+            );
+
+            create table if not exists palace_drawers (
+                id integer primary key autoincrement,
+                room_id integer not null,
+                session_id text not null,
+                message_id integer,
+                role text not null,
+                content text not null,
+                keywords text not null default '',
+                created_at text not null,
+                foreign key(room_id) references palace_rooms(id),
+                foreign key(session_id) references sessions(id),
+                foreign key(message_id) references messages(id)
+            );
             """
         )
+    ensure_palace_rooms()
+    backfill_drawers_if_needed()
 
 
 def db_rows(query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
@@ -133,6 +188,70 @@ def db_exec(query: str, params: tuple[Any, ...] = ()) -> None:
         conn.commit()
 
 
+def db_exec_returning_id(query: str, params: tuple[Any, ...] = ()) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(query, params)
+        conn.commit()
+        return int(cursor.lastrowid)
+
+
+def ensure_palace_rooms() -> None:
+    stamp = now_iso()
+    for name, data in PALACE_ROOM_DEFS.items():
+        db_exec(
+            """
+            insert or ignore into palace_rooms (name, description, created_at, updated_at)
+            values (?, ?, ?, ?)
+            """,
+            (name, data["description"], stamp, stamp),
+        )
+
+
+def pick_room_for_text(text: str) -> str:
+    lower = text.lower()
+    if any(term in lower for term in CRISIS_TERMS):
+        return "safety"
+
+    scored: list[tuple[int, str]] = []
+    for room_name, data in PALACE_ROOM_DEFS.items():
+        score = sum(1 for signal in data["signals"] if signal in lower)
+        if score:
+            scored.append((score, room_name))
+    if not scored:
+        return "reflection"
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return scored[0][1]
+
+
+def extract_keywords(text: str, max_words: int = 16) -> str:
+    words = re.findall(r"[a-zA-Z]{4,}", text.lower())
+    unique = sorted(set(words))
+    return " ".join(unique[:max_words])
+
+
+def add_drawer(session_id: str, message_id: int, role: str, content: str) -> None:
+    room_name = pick_room_for_text(content)
+    room = db_one("select id from palace_rooms where name = ?", (room_name,))
+    if not room:
+        return
+    db_exec(
+        """
+        insert into palace_drawers (room_id, session_id, message_id, role, content, keywords, created_at)
+        values (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (room["id"], session_id, message_id, role, content, extract_keywords(content), now_iso()),
+    )
+
+
+def backfill_drawers_if_needed() -> None:
+    has_drawers = db_one("select id from palace_drawers limit 1")
+    if has_drawers:
+        return
+    rows = db_rows("select id, session_id, role, content from messages order by id asc")
+    for row in rows:
+        add_drawer(row["session_id"], row["id"], row["role"], row["content"])
+
+
 def ensure_session(session_id: str | None) -> str:
     if session_id and db_one("select id from sessions where id = ?", (session_id,)):
         return session_id
@@ -147,10 +266,11 @@ def ensure_session(session_id: str | None) -> str:
 
 
 def add_message(session_id: str, role: str, content: str) -> None:
-    db_exec(
+    message_id = db_exec_returning_id(
         "insert into messages (session_id, role, content, created_at) values (?, ?, ?, ?)",
         (session_id, role, content, now_iso()),
     )
+    add_drawer(session_id, message_id, role, content)
     db_exec("update sessions set updated_at = ? where id = ?", (now_iso(), session_id))
     if role == "user":
         session = db_one("select title from sessions where id = ?", (session_id,))
@@ -248,10 +368,47 @@ def relevant_memories(user_text: str, limit: int = 8) -> list[dict[str, Any]]:
     return [item[1] for item in scored[:limit]]
 
 
-def build_system_prompt(memories: list[dict[str, Any]], interventions: list[dict[str, str]], session_summary: str) -> str:
+def relevant_drawers(user_text: str, limit: int = 8) -> list[dict[str, Any]]:
+    words = {word for word in re.findall(r"[a-zA-Z]{4,}", user_text.lower())}
+    preferred_room = pick_room_for_text(user_text)
+    drawers = db_rows(
+        """
+        select d.id, d.role, d.content, d.keywords, d.created_at, r.name as room_name
+        from palace_drawers d
+        join palace_rooms r on r.id = d.room_id
+        order by d.id desc
+        limit 200
+        """
+    )
+
+    scored: list[tuple[int, dict[str, Any]]] = []
+    for drawer in drawers:
+        haystack = f"{drawer['room_name']} {drawer['keywords']} {drawer['content']}".lower()
+        overlap = sum(1 for word in words if word in haystack)
+        room_bonus = 2 if drawer["room_name"] == preferred_room else 0
+        total = overlap + room_bonus
+        if total > 0:
+            scored.append((total, drawer))
+
+    if not scored:
+        return drawers[:limit]
+    scored.sort(key=lambda item: (item[0], item[1]["created_at"]), reverse=True)
+    return [item[1] for item in scored[:limit]]
+
+
+def build_system_prompt(
+    memories: list[dict[str, Any]],
+    interventions: list[dict[str, str]],
+    session_summary: str,
+    drawers: list[dict[str, Any]],
+) -> str:
     memory_lines = "\n".join(
         f"- {memory['kind']}: {memory['content']}" for memory in memories
     ) or "- No durable memories yet."
+    drawer_lines = "\n".join(
+        f"- [{drawer['room_name']}] {drawer['role']}: {clean_sentence(drawer['content'])[:220]}"
+        for drawer in drawers
+    ) or "- No verbatim drawer recall yet."
     intervention_lines = "\n".join(
         f"- {item['name']}: {item['rationale']}" for item in interventions
     )
@@ -269,6 +426,9 @@ def build_system_prompt(memories: list[dict[str, Any]], interventions: list[dict
 
         Relevant long-term memory palace:
         {memory_lines}
+
+        Verbatim drawers recalled from palace rooms (Method of Loci):
+        {drawer_lines}
 
         Selected therapy interventions for this reply:
         {intervention_lines}
@@ -451,13 +611,44 @@ class TherapyHandler(SimpleHTTPRequestHandler):
             )
             return
         if self.path == "/api/memory":
+                room_counts = db_rows(
+                    """
+                    select r.name, r.description, count(d.id) as drawer_count
+                    from palace_rooms r
+                    left join palace_drawers d on d.room_id = r.id
+                    group by r.id
+                    order by r.name asc
+                    """
+                )
             self.json_response(
                 {
                     "memories": db_rows("select * from memories order by updated_at desc"),
                     "commitments": db_rows("select * from commitments order by updated_at desc"),
+                        "rooms": room_counts,
                 }
             )
             return
+            if self.path == "/api/palace":
+                rooms = db_rows(
+                    """
+                    select r.id, r.name, r.description, count(d.id) as drawer_count
+                    from palace_rooms r
+                    left join palace_drawers d on d.room_id = r.id
+                    group by r.id
+                    order by drawer_count desc, r.name asc
+                    """
+                )
+                recent = db_rows(
+                    """
+                    select d.id, d.role, d.content, d.created_at, d.session_id, r.name as room_name
+                    from palace_drawers d
+                    join palace_rooms r on r.id = d.room_id
+                    order by d.id desc
+                    limit 24
+                    """
+                )
+                self.json_response({"rooms": rooms, "drawers": recent})
+                return
         super().do_GET()
 
     def do_POST(self) -> None:
@@ -471,13 +662,19 @@ class TherapyHandler(SimpleHTTPRequestHandler):
             session_id = ensure_session(body.get("session_id"))
             add_message(session_id, "user", user_text)
             memories = relevant_memories(user_text)
+            drawers = relevant_drawers(user_text)
             new_memories = extract_memories(session_id, user_text)
             interventions = pick_interventions(user_text)
             risk = risk_level(user_text)
             db_exec("update sessions set risk_level = ? where id = ?", (risk, session_id))
             session = db_one("select * from sessions where id = ?", (session_id,))
             context_messages = "\n".join(f"{m['role']}: {m['content']}" for m in recent_messages(session_id))
-            system_prompt = build_system_prompt(memories + new_memories, interventions, session["summary"] if session else "")
+            system_prompt = build_system_prompt(
+                memories + new_memories,
+                interventions,
+                session["summary"] if session else "",
+                drawers,
+            )
             input_text = f"Current conversation:\n{context_messages}\n\nUser's newest message:\n{user_text}"
 
             try:
@@ -501,6 +698,7 @@ class TherapyHandler(SimpleHTTPRequestHandler):
                     "summary": summary,
                     "interventions": interventions,
                     "new_memories": new_memories,
+                    "recalled_drawers": drawers,
                     "commitment": commitment,
                     "risk_level": risk,
                     "model_status": model_status,
