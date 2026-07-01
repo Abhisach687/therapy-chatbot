@@ -299,10 +299,35 @@ def call_local_llm(system_prompt: str, input_text: str) -> str:
     with urllib.request.urlopen(request, timeout=90) as response:
         raw = response.read().decode("utf-8")
     parsed = json.loads(raw)
+    extracted = extract_llm_text(parsed)
+    if extracted:
+        return extracted
+    return raw
+
+
+def extract_llm_text(parsed: Any) -> str:
+    if isinstance(parsed, str):
+        return parsed
+    if isinstance(parsed, list):
+        parts = [extract_llm_text(item) for item in parsed]
+        return "\n".join(part for part in parts if part).strip()
+    if not isinstance(parsed, dict):
+        return ""
+
     for key in ("response", "output", "message", "content", "text"):
-        if isinstance(parsed, dict) and isinstance(parsed.get(key), str):
-            return parsed[key]
-    if isinstance(parsed, dict) and isinstance(parsed.get("choices"), list):
+        value = parsed.get(key)
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            extracted = extract_llm_text(value)
+            if extracted:
+                return extracted
+        if isinstance(value, dict):
+            extracted = extract_llm_text(value)
+            if extracted:
+                return extracted
+
+    if isinstance(parsed.get("choices"), list):
         choice = parsed["choices"][0]
         if isinstance(choice, dict):
             message = choice.get("message")
@@ -310,7 +335,7 @@ def call_local_llm(system_prompt: str, input_text: str) -> str:
                 return message["content"]
             if isinstance(choice.get("text"), str):
                 return choice["text"]
-    return raw
+    return ""
 
 
 def fallback_reply(user_text: str, interventions: list[dict[str, str]], risk: str) -> str:

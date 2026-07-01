@@ -20,7 +20,7 @@ async function api(path, options = {}) {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => ({
+  return String(value || "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -29,14 +29,76 @@ function escapeHtml(value) {
   })[char]);
 }
 
+function formatText(value) {
+  const text = escapeHtml(extractDisplayText(value));
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n{2,}/g, "</p><p>")
+    .replace(/\n/g, "<br>");
+}
+
+function extractDisplayText(value) {
+  const text = String(value || "").trim();
+  if (!text.startsWith("{") && !text.startsWith("[")) return text;
+  try {
+    return extractFromEnvelope(JSON.parse(text)) || text;
+  } catch {
+    return text;
+  }
+}
+
+function extractFromEnvelope(value) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value.map(extractFromEnvelope).filter(Boolean).join("\n").trim();
+  }
+  if (!value || typeof value !== "object") return "";
+  for (const key of ["response", "output", "message", "content", "text"]) {
+    const extracted = extractFromEnvelope(value[key]);
+    if (extracted) return extracted;
+  }
+  if (Array.isArray(value.choices)) {
+    return extractFromEnvelope(value.choices[0]);
+  }
+  return "";
+}
+
+function formattedBlock(value) {
+  return `<p>${formatText(value || "")}</p>`;
+}
+
 function renderMessages() {
   $("messages").innerHTML = state.messages.map((message) => `
-    <article class="message ${message.role}">
+    <article class="message ${message.role}" data-message-index="${message.index}">
       <div class="avatar">${message.role === "user" ? "You" : "AI"}</div>
-      <div class="bubble">${escapeHtml(message.content).replace(/\n/g, "<br>")}</div>
+      <div class="bubble">${formattedBlock(message.content)}</div>
     </article>
   `).join("");
   $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+function normalizeMessageIndexes() {
+  state.messages = state.messages.map((message, index) => ({ ...message, index }));
+}
+
+function updateMessageContent(index, content) {
+  const message = state.messages[index];
+  if (!message) return;
+  message.content = content;
+  const bubble = document.querySelector(`[data-message-index="${index}"] .bubble`);
+  if (bubble) {
+    bubble.innerHTML = formattedBlock(content);
+    $("messages").scrollTop = $("messages").scrollHeight;
+  }
+}
+
+async function streamAssistantMessage(index, fullText) {
+  updateMessageContent(index, "");
+  const chunkSize = fullText.length > 900 ? 8 : 4;
+  for (let cursor = 0; cursor < fullText.length; cursor += chunkSize) {
+    updateMessageContent(index, fullText.slice(0, cursor + chunkSize));
+    await new Promise((resolve) => setTimeout(resolve, 12));
+  }
 }
 
 function renderSessions() {
@@ -123,9 +185,10 @@ async function loadSession(id) {
   state.sessionId = id;
   localStorage.setItem("therapy-session-id", id);
   state.messages = payload.messages;
+  normalizeMessageIndexes();
   state.commitments = payload.commitments;
   $("sessionTitle").textContent = payload.session.title;
-  $("summary").textContent = payload.session.summary || "No summary yet.";
+  $("summary").innerHTML = formattedBlock(payload.session.summary || "No summary yet.");
   $("riskPill").textContent = `${payload.session.risk_level} risk`;
   $("riskPill").className = `risk-pill ${payload.session.risk_level}`;
   renderMessages();
@@ -146,7 +209,7 @@ async function deleteSession(id) {
     state.sessionId = null;
     state.messages = [];
     state.commitments = [];
-    $("summary").textContent = "Start by sharing what feels important, stuck, or worth changing.";
+    $("summary").innerHTML = formattedBlock("Start by sharing what feels important, stuck, or worth changing.");
     $("sessionTitle").textContent = "Current session";
     $("riskPill").textContent = "Low risk";
     $("riskPill").className = "risk-pill";
@@ -171,7 +234,7 @@ async function createSession() {
   localStorage.setItem("therapy-session-id", state.sessionId);
   state.messages = [];
   state.commitments = [];
-  $("summary").textContent = "Start by sharing what feels important, stuck, or worth changing.";
+  $("summary").innerHTML = formattedBlock("Start by sharing what feels important, stuck, or worth changing.");
   renderMessages();
   renderCommitments();
   await loadSessions();
@@ -191,6 +254,8 @@ async function sendMessage(event) {
 
   state.messages.push({ role: "user", content: message });
   state.messages.push({ role: "assistant", content: "Thinking with your memory and current therapy focus..." });
+  normalizeMessageIndexes();
+  const assistantIndex = state.messages.length - 1;
   renderMessages();
 
   const payload = await api("/api/chat", {
@@ -199,11 +264,14 @@ async function sendMessage(event) {
   });
 
   $("modelStatus").textContent = payload.model_status;
-  $("summary").textContent = payload.summary || "No summary yet.";
+  $("summary").innerHTML = formattedBlock(payload.summary || "No summary yet.");
   $("riskPill").textContent = `${payload.risk_level} risk`;
   $("riskPill").className = `risk-pill ${payload.risk_level}`;
   renderInterventions(payload.interventions || []);
-  await loadSession(payload.session.id);
+  await streamAssistantMessage(assistantIndex, payload.reply || "");
+  state.sessionId = payload.session.id;
+  localStorage.setItem("therapy-session-id", state.sessionId);
+  $("sessionTitle").textContent = payload.session.title;
   await loadSessions();
   await loadMemory();
 }
@@ -214,7 +282,7 @@ async function refreshSummary() {
     method: "POST",
     body: JSON.stringify({ session_id: state.sessionId }),
   });
-  $("summary").textContent = payload.summary || "No summary yet.";
+  $("summary").innerHTML = formattedBlock(payload.summary || "No summary yet.");
   await loadSessions();
 }
 

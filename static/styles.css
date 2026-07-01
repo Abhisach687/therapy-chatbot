@@ -263,6 +263,10 @@ h2 {
   line-height: 1.5;
 }
 
+.summary-band p + p {
+  margin-top: 8px;
+}
+
 .messages {
   padding: 24px;
   overflow-y: auto;
@@ -313,6 +317,14 @@ h2 {
   padding: 14px 16px;
   line-height: 1.55;
   box-shadow: 0 10px 24px rgba(21, 40, 35, 0.06);
+}
+
+.bubble p + p {
+  margin-top: 12px;
+}
+
+.bubble strong {
+  font-weight: 800;
 }
 
 .composer {
